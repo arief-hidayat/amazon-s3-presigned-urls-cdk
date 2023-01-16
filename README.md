@@ -17,3 +17,10 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
 Ref: https://aws.amazon.com/blogs/compute/uploading-to-amazon-s3-directly-from-a-web-or-mobile-application/
 Modified for Jakarta region
+
+```
+API=https://23p926q37c.execute-api.ap-southeast-3.amazonaws.com/prod
+SIGNED_URL=$(curl -H "Authorization: Allow" $API | jq -r .uploadURL)
+echo $SIGNED_URL
+curl -v --upload-file severity.jpeg $SIGNED_URL
+```
