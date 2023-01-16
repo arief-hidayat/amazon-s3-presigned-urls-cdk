@@ -1,4 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
+import * as path from 'path';
 import { Construct } from 'constructs';
 import { Duration, Stack, StackProps } from 'aws-cdk-lib';
 import * as s3 from 'aws-cdk-lib/aws-s3';
@@ -43,9 +44,20 @@ export class AmazonS3PresignedUrlsCdkStack extends cdk.Stack {
       ]
     });
 
+    const authorizerFn = new lambda.Function(this, 'MyAuthorizerFunction', {
+      runtime: lambda.Runtime.NODEJS_16_X,
+      handler: 'token.handler',
+      code: lambda.AssetCode.fromAsset('integ.token-authorizer.handler'),
+      // code: lambda.AssetCode.fromAsset(path.join(__dirname, 'integ.token-authorizer.handler')),
+    });
+    const authorizer = new agw.TokenAuthorizer(this, 'MyAuthorizer', {
+      handler: authorizerFn,
+    });
+
     const apiGw = new ApiGatewayToLambda(this, 'ApiGatewayToLambda', {
       lambdaFunctionProps: {
         code: lambda.Code.fromAsset(`getSignedURL`),
+        // code: lambda.Code.fromAsset(path.join(__dirname, `getSignedURL`)),
         runtime: lambda.Runtime.NODEJS_16_X,
         handler: 'app.handler',
         memorySize: 128,
@@ -61,6 +73,10 @@ export class AmazonS3PresignedUrlsCdkStack extends cdk.Stack {
           // https://github.com/awslabs/aws-solutions-constructs/blob/main/source/patterns/@aws-solutions-constructs/core/lib/apigateway-defaults.ts
           dataTraceEnabled: false,
           tracingEnabled: false
+        },
+        defaultMethodOptions: {
+          authorizationType: agw.AuthorizationType.CUSTOM,
+          authorizer: authorizer,
         },
       }
     });
